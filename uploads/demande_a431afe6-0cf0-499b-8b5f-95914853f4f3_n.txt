@@ -1,0 +1,683 @@
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  IonPage, IonContent, IonButton, IonIcon, IonToast,
+  IonModal, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption,
+  IonSegment, IonSegmentButton, IonSearchbar, IonFab, IonFabButton
+} from "@ionic/react";
+import { addOutline, closeOutline } from "ionicons/icons";
+import "./rappels.css";
+import { createRappel, getRappels, Rappel, RappelPayload, RappelType } from "../services/rappels";
+import TopMenu from "../components/TopMenu";
+const todayMidnight = () => {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+};
+const isOverdue = (iso: string) => {
+  if (!iso) return false;
+  const d = new Date(iso + "T00:00:00");
+  return d < todayMidnight();
+};
+
+const Reminders: React.FC = () => {
+  const [items, setItems] = useState<Rappel[]>([]);
+  const [type, setType] = useState<RappelType>("COMMANDE");
+  const [q, setQ] = useState("");
+
+  // modal details
+  const [openDetails, setOpenDetails] = useState(false);
+  const [selected, setSelected] = useState<Rappel | null>(null);
+
+  // modal add
+  const [openAdd, setOpenAdd] = useState(false);
+
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+
+  const [newR, setNewR] = useState<RappelPayload>({
+    type: "COMMANDE",
+    reference: "",
+    description: "",
+    datePrevue: "",
+    statut: "A_VENIR",
+    priorite: "MOYENNE",
+    responsable: "",
+    // champs optionnels
+    client: "",
+    machine: "",
+    maintenanceType: "PREVENTIVE",
+  });
+
+  const refresh = async () => {
+    const data = await getRappels();
+    setItems(data);
+
+    const lateCount = data.filter(r => r.statut !== "LIVREE" && isOverdue(r.datePrevue)).length;
+    if (lateCount > 0) {
+      setToastMsg(`⚠️ ${lateCount} rappel(s) en retard`);
+      setToastOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    refresh().catch(console.error);
+  }, []);
+
+  // KPI
+  const lateCount = useMemo(
+    () => items.filter(r => r.statut !== "LIVREE" && isOverdue(r.datePrevue)).length,
+    [items]
+  );
+
+  // List filtered by segment + search
+  const list = useMemo(() => {
+    const base = items.filter(r => r.type === type);
+    const s = q.trim().toLowerCase();
+    if (!s) return base;
+    return base.filter(r =>
+      (r.reference || "").toLowerCase().includes(s) ||
+      (r.description || "").toLowerCase().includes(s) ||
+      (r.responsable || "").toLowerCase().includes(s) ||
+      (r.client || "").toLowerCase().includes(s) ||
+      (r.machine || "").toLowerCase().includes(s)
+    );
+  }, [items, type, q]);
+
+  const openItem = (r: Rappel) => {
+    setSelected(r);
+    setOpenDetails(true);
+  };
+
+  const resetAddForm = (t: RappelType) => {
+    setNewR({
+      type: t,
+      reference: "",
+      description: "",
+      datePrevue: "",
+      statut: "A_VENIR",
+      priorite: "MOYENNE",
+      responsable: "",
+      client: "",
+      machine: "",
+      maintenanceType: "PREVENTIVE",
+    });
+  };
+
+  const submitAdd = async () => {
+    if (!newR.reference.trim()) return setToastMsg("Référence obligatoire"), setToastOpen(true);
+    if (!newR.datePrevue) return setToastMsg("Date prévue obligatoire"), setToastOpen(true);
+
+    // nettoyage minimal
+    const payload: RappelPayload = {
+      ...newR,
+      reference: newR.reference.trim(),
+      description: (newR.description || "").trim(),
+      responsable: (newR.responsable || "").trim(),
+      client: (newR.client || "").trim(),
+      machine: (newR.machine || "").trim(),
+    };
+
+    await createRappel(payload);
+    setToastMsg("Rappel ajouté ✅");
+    setToastOpen(true);
+    setOpenAdd(false);
+    await refresh();
+  };
+
+  return (
+    <IonPage>
+      <IonContent fullscreen className="login-bg">
+        
+  <TopMenu title="🔔 Rappels & Notifications" />
+  <div className="login-shell">
+        <div className="login-shell">
+          <div className="reminders-card">
+
+            {/* HEADER same style */}
+            <div className="form-head">
+              <div className="head-row">
+             <h3 className="form-title">Suivi des commandes, maintenance et actions importantes</h3>
+                <span className="kpi-badge">⚠️ {lateCount}</span>
+              </div>
+              
+            </div>
+
+            {/* SEGMENT */}
+            <IonSegment value={type} onIonChange={(e) => setType(e.detail.value as RappelType)} className="seg">
+              <IonSegmentButton value="COMMANDE">Commandes</IonSegmentButton>
+              <IonSegmentButton value="MAINTENANCE">Maintenance</IonSegmentButton>
+            </IonSegment>
+
+            {/* SEARCH */}
+            <IonSearchbar
+              value={q}
+              onIonInput={(e) => setQ(String(e.detail.value ?? ""))}
+              placeholder={type === "COMMANDE" ? "Rechercher commande, client..." : "Rechercher machine, technicien..."}
+              className="search"
+            />
+
+            {/* LIST */}
+            <div className="list">
+              {list.length === 0 ? (
+                <p className="empty">Aucun rappel.</p>
+              ) : (
+                list.map((r) => {
+                  const overdue = r.statut !== "LIVREE" && isOverdue(r.datePrevue);
+                  return (
+                    <div
+                      key={r.id}
+                      className={`erp-card ${overdue ? "danger" : r.statut === "EN_RETARD" ? "warning" : ""}`}
+                      onClick={() => openItem(r)}
+                    >
+                      <div className="card-top">
+                        <h3 className="card-title">
+                          {r.type === "COMMANDE" ? `Commande #${r.reference}` : `Machine : ${r.reference}`}
+                        </h3>
+                        <span className="chip">{r.datePrevue}</span>
+                      </div>
+
+                      <p className="card-desc">{r.description}</p>
+
+                      <div className="card-bottom">
+                        <span className={`pill ${overdue ? "late" : r.statut.toLowerCase()}`}>
+                          {overdue ? "⚠️ En retard" :
+                           r.statut === "A_VENIR" ? "⏳ À venir" :
+                           r.statut === "EN_RETARD" ? "⚠️ En retard" : "✅ Livrée"}
+                        </span>
+
+                        <span className={`pill prio ${r.priorite.toLowerCase()}`}>
+                          {r.priorite === "URGENTE" ? "🔴 Urgente" :
+                           r.priorite === "MOYENNE" ? "🟠 Moyenne" : "🟢 Basse"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* FAB ADD */}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton
+            className="fab-outline"
+            onClick={() => {
+              resetAddForm(type); // ouvre formulaire selon onglet actuel
+              setOpenAdd(true);
+            }}
+          >
+            <IonIcon icon={addOutline} />
+          </IonFabButton>
+        </IonFab>
+
+        {/* DETAILS MODAL */}
+        <IonModal isOpen={openDetails} onDidDismiss={() => setOpenDetails(false)} className="date-modal">
+          <IonContent className="date-modal-content">
+            <div className="modal-head">
+              <h3>Détails</h3>
+              <IonButton fill="clear" onClick={() => setOpenDetails(false)}>
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </div>
+
+            {selected && (
+              <div className="details">
+                <div className="details-row">
+                  <span className="muted">Type</span>
+                  <span>{selected.type}</span>
+                </div>
+                <div className="details-row">
+                  <span className="muted">Référence</span>
+                  <span>{selected.reference}</span>
+                </div>
+
+                {/* Champs spécifiques */}
+                {selected.type === "COMMANDE" && selected.client && (
+                  <div className="details-row">
+                    <span className="muted">Client</span>
+                    <span>{selected.client}</span>
+                  </div>
+                )}
+                {selected.type === "MAINTENANCE" && selected.machine && (
+                  <div className="details-row">
+                    <span className="muted">Machine</span>
+                    <span>{selected.machine}</span>
+                  </div>
+                )}
+
+                <div className="details-row">
+                  <span className="muted">Date prévue</span>
+                  <span>{selected.datePrevue}</span>
+                </div>
+                <div className="details-row">
+                  <span className="muted">Responsable</span>
+                  <span>{selected.responsable}</span>
+                </div>
+                <div className="details-row">
+                  <span className="muted">Priorité</span>
+                  <span>{selected.priorite}</span>
+                </div>
+                <div className="details-row">
+                  <span className="muted">Statut</span>
+                  <span>{selected.statut}</span>
+                </div>
+
+                <div className="details-block">
+                  <span className="muted">Description</span>
+                  <p>{selected.description}</p>
+                </div>
+              </div>
+            )}
+          </IonContent>
+        </IonModal>
+
+        {/* ADD FORM MODAL */}
+        <IonModal isOpen={openAdd} onDidDismiss={() => setOpenAdd(false)} className="date-modal">
+          <IonContent className="date-modal-content">
+            <div className="modal-head">
+              <h3>Ajouter un rappel</h3>
+              <IonButton fill="clear" onClick={() => setOpenAdd(false)}>
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </div>
+
+            {/* TYPE */}
+            <IonItem lines="none" className="form-item">
+              <IonLabel>Type</IonLabel>
+              <IonSelect
+  interface="popover"
+  value={newR.type}
+  onIonChange={(e) => {
+    const t = e.detail.value as RappelType;
+    resetAddForm(t);
+  }}
+>
+  <IonSelectOption value="COMMANDE">Commande</IonSelectOption>
+  <IonSelectOption value="MAINTENANCE">Maintenance</IonSelectOption>
+</IonSelect>
+
+            </IonItem>
+
+            {/* Champs spécifiques */}
+            {newR.type === "COMMANDE" ? (
+              <>
+                <div className="field">
+                  <label className="label">N° commande</label>
+                  <IonInput className="input-plain"
+                    value={newR.reference}
+                    placeholder="CMD-1023"
+                    onIonInput={(e) => setNewR(p => ({ ...p, reference: String(e.detail.value ?? "") }))}
+                  />
+                </div>
+                <div className="field">
+                  <label className="label">Client</label>
+                  <IonInput className="input-plain"
+                    value={newR.client || ""}
+                    placeholder="Société X"
+                    onIonInput={(e) => setNewR(p => ({ ...p, client: String(e.detail.value ?? "") }))}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="field">
+                  <label className="label">Machine</label>
+                  <IonInput className="input-plain"
+                    value={newR.reference}
+                    placeholder="Tisser-03"
+                    onIonInput={(e) => setNewR(p => ({ ...p, reference: String(e.detail.value ?? "") }))}
+                  />
+                </div>
+                <IonItem lines="none" className="form-item">
+                  <IonLabel>Type maintenance</IonLabel>
+                  <IonSelect
+  interface="popover"
+  value={newR.maintenanceType || "PREVENTIVE"}
+  onIonChange={(e) => setNewR(p => ({ ...p, maintenanceType: e.detail.value }))}
+>
+  <IonSelectOption value="PREVENTIVE">Préventive</IonSelectOption>
+  <IonSelectOption value="CORRECTIVE">Corrective</IonSelectOption>
+</IonSelect>
+
+                </IonItem>
+              </>
+            )}
+
+            <div className="field">
+              <label className="label">Description</label>
+              <IonInput className="input-plain"
+                value={newR.description}
+                placeholder={newR.type === "COMMANDE" ? "Livraison, production..." : "Maintenance, pièce, contrôle..."}
+                onIonInput={(e) => setNewR(p => ({ ...p, description: String(e.detail.value ?? "") }))}
+              />
+            </div>
+
+            <div className="field">
+              <label className="label">Date prévue</label>
+              <IonInput className="input-plain"
+                type="date"
+                value={newR.datePrevue}
+                onIonInput={(e) => setNewR(p => ({ ...p, datePrevue: String(e.detail.value ?? "") }))}
+              />
+            </div>
+
+            <IonItem lines="none" className="form-item">
+              <IonLabel>Priorité</IonLabel>
+             <IonSelect
+  interface="popover"
+  value={newR.priorite}
+  onIonChange={(e) => setNewR(p => ({ ...p, priorite: e.detail.value }))}
+>
+  <IonSelectOption value="BASSE">Basse</IonSelectOption>
+  <IonSelectOption value="MOYENNE">Moyenne</IonSelectOption>
+  <IonSelectOption value="URGENTE">Urgente</IonSelectOption>
+</IonSelect>
+
+            </IonItem>
+
+            <IonItem lines="none" className="form-item">
+              <IonLabel>Statut</IonLabel>
+            <IonSelect
+  interface="popover"
+  value={newR.statut}
+  onIonChange={(e) => setNewR(p => ({ ...p, statut: e.detail.value }))}
+>
+  <IonSelectOption value="A_VENIR">À venir</IonSelectOption>
+  <IonSelectOption value="EN_RETARD">En retard</IonSelectOption>
+  <IonSelectOption value="LIVREE">Livrée</IonSelectOption>
+</IonSelect>
+
+            </IonItem>
+
+            <div className="field">
+              <label className="label">Responsable</label>
+              <IonInput className="input-plain"
+                value={newR.responsable}
+                placeholder="Nom technicien / responsable"
+                onIonInput={(e) => setNewR(p => ({ ...p, responsable: String(e.detail.value ?? "") }))}
+              />
+            </div>
+
+            <div className="row">
+              <IonButton className="go-btn" fill="outline" onClick={submitAdd}>
+                Ajouter
+              </IonButton>
+            </div>
+          </IonContent>
+        </IonModal>
+
+        <IonToast
+          isOpen={toastOpen}
+          message={toastMsg}
+          duration={2400}
+          position="top"
+          onDidDismiss={() => setToastOpen(false)}
+        />
+        </div>
+      </IonContent>
+    </IonPage>
+  );
+};
+
+export default Reminders;
+.page-bg {
+   --background: transparent;
+  position: relative;
+  min-height: 100vh;
+
+  background: url("/assets/bbb.png") center/cover no-repeat;
+}
+.page-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 34, 64, 0.70);
+}
+
+.page-header {
+  padding: 18px;
+}
+
+.page-header h1 {
+  font-size: 22px;
+}
+
+.page-header p {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.reminder-section {
+  padding: 0 18px 20px;
+}
+
+.erp-card {
+  background: rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.erp-card.warning {
+  border-left: 4px solid #facc15;
+}
+
+.erp-card.danger {
+  border-left: 4px solid #ef4444;
+}
+
+.status,
+.priority {
+  font-size: 13px;
+  font-weight: 500;
+}
+/* =========================================
+   RAPPELS : tout le texte en BLANC
+   SAUF texte saisi dans IonSearchbar
+   (à coller à la fin de rappels.css)
+========================================= */
+
+/* 1) Tout en blanc dans la carte + contenu */
+.reminders-card,
+.reminders-card * 
+ {
+  color: #fff !important;
+}
+
+/* 2) Ionic components (variables) -> blanc partout */
+.reminders-card ion-segment,
+.reminders-card ion-segment-button,
+.reminders-card ion-item,
+.reminders-card ion-label,
+.reminders-card ion-select,
+.reminders-card ion-select-option,
+.reminders-card ion-input,
+.reminders-card ion-button,
+.reminders-card ion-icon
+ {
+  --color: #fff !important;
+}
+
+/* Inputs (modals / formulaires) : texte blanc + placeholder clair */
+.reminders-card ion-input,
+.date-modal ion-input {
+  --color: #fff !important;
+  --placeholder-color: rgba(255,255,255,0.65) !important;
+}
+
+/* Cards de liste : tout blanc (dates, description, etc.) */
+.erp-card,
+.erp-card * {
+  color: #fff !important;
+}
+
+/* Muted (si tu veux aussi en blanc) */
+.muted {
+  color: #fff !important;
+  opacity: 0.85; /* enlève si tu veux 100% blanc */
+}
+
+/* -------------------------------------------------
+   3) EXCEPTION : IonSearchbar
+   - texte tapé => NOIR
+   - placeholder + icônes => BLANC
+-------------------------------------------------- */
+ion-searchbar.search {
+  --background: #ffffff !important;
+  --color: #000000 !important; /* ✅ texte saisi */
+  --placeholder-color: rgba(0,0,0,0.45) !important; /* placeholder dans champ blanc */
+  --icon-color: #000000 !important;
+  --clear-button-color: #000000 !important;
+}
+
+/* Par sécurité selon versions Ionic (shadow parts) */
+ion-searchbar.search::part(input) {
+  color: #000 !important; /* ✅ texte saisi */
+}
+ion-searchbar.search::part(placeholder) {
+  color: rgba(0,0,0,0.45) !important;
+}
+/* =========================================
+   MODAL TRANSPARENT / GLASS
+========================================= */
+
+/* Boîte du modal */
+ion-modal.date-modal::part(content) {
+  width: min(520px, calc(100% - 28px));
+  max-height: 80vh;
+  border-radius: 22px;
+  overflow: hidden;
+
+  /* 🔥 TRANSPARENT / GLASS */
+  background: rgba(10, 18, 32, 0.55); /* ⬅️ transparence */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Fond derrière le modal */
+ion-modal.date-modal::part(backdrop) {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Contenu du modal */
+ion-modal.date-modal ion-content.date-modal-content {
+  --background: transparent !important;
+  color: #fff !important;
+}
+
+/* IMPORTANT : zone scroll interne */
+ion-modal.date-modal ion-content.date-modal-content::part(scroll) {
+  padding: 16px;
+  color: #fff !important;
+}
+
+/* Header */
+ion-modal.date-modal .modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+ion-modal.date-modal .modal-head h3 {
+  color: #fff !important;
+  font-weight: 800;
+}
+
+ion-modal.date-modal .modal-head ion-button {
+  --color: #fff !important;
+}
+
+/* Lignes détails */
+ion-modal.date-modal .details-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+ion-modal.date-modal .muted {
+  color: rgb(250, 248, 248) !important;
+  font-weight: 400;
+}
+
+/* Description */
+ion-modal.date-modal .details-block p {
+  color: #fff !important;
+  opacity: 0.95;
+}
+/* =========================================
+   MODAL ADD : SUPPRIMER FOND BLANC
+   (IonItem / IonSelect / IonInput)
+========================================= */
+
+/* IonItem dans le modal (Type, Priorité, Statut, etc.) */
+ion-modal.date-modal ion-item {
+  --background: transparent !important;
+  --background-hover: transparent !important;
+  --background-focused: transparent !important;
+  --color: #ffffff !important;
+
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Labels */
+ion-modal.date-modal ion-label {
+  color: rgba(255,255,255,0.85) !important;
+  font-weight: 600;
+}
+
+/* Select (Type, Type maintenance, Priorité, Statut) */
+ion-modal.date-modal ion-select {
+  --color: #ffffff !important;
+  --placeholder-color: rgba(255,255,255,0.6) !important;
+  --background: transparent !important;
+}
+
+/* Input (Machine, Description, Responsable, Date) */
+ion-modal.date-modal ion-input {
+  --background: transparent !important;
+  --color: #ffffff !important;
+  --placeholder-color: rgba(255,255,255,0.6) !important;
+
+  background: transparent !important;
+}
+
+/* Champ date (icône calendrier) */
+ion-modal.date-modal ion-input[type="date"]::part(native) {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+/* Supprimer le fond blanc interne Ionic */
+ion-modal.date-modal ion-item::part(native) {
+  background: transparent !important;
+}
+
+/* Supprimer les cartes blanches autour */
+ion-modal.date-modal ion-item.form-item {
+  box-shadow: none !important;
+  border-radius: 0;
+}
+/* Popover IonSelect (liste options) en glass */
+ion-popover {
+  --background: rgba(10, 18, 32, 0.85);
+  --backdrop-opacity: 0.25;
+}
+
+ion-popover ion-item {
+  --background: transparent !important;
+  --color: #fff !important;
+}
+
+ion-popover ion-radio {
+  --color: rgba(255,255,255,0.5);
+  --color-checked: rgba(116,199,255,0.95);
+}
+
+ion-popover ion-list {
+  background: transparent !important;
+}

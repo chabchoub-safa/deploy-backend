@@ -1,0 +1,32 @@
+Le robot virtuel envoie ses données via le protocole MQTT.
+Le serveur Spring Boot s’abonne aux topics MQTT pour recevoir ces messages.
+Lorsqu’une alerte est détectée, le serveur envoie une notification vers le frontend sur le topic /topic/alertes.
+Le protocole STOMP organise l’envoi et la distribution du message.
+SockJS sert de canal de transport pour assurer la connexion.
+L’application mobile reçoit l’alerte et l’affiche à l’utilisateur.
+
+
+
+
+
+
+
+
+
+
+
+
+
+Cette architecture représente un système IoT basé sur une communication temps réel entre un robot virtuel, un serveur central et une application mobile.
+
+Tout d’abord, le robot virtuel collecte des données comme l’état du système ou des alertes, puis il les publie via le protocole MQTT. MQTT a été choisi car il est léger, rapide et très adapté aux systèmes IoT.
+
+Ces données sont ensuite reçues par un broker MQTT, qui joue le rôle d’intermédiaire et assure la transmission fiable des messages.
+
+Le serveur, développé avec Spring Boot, s’abonne aux topics MQTT afin de recevoir et traiter les données envoyées par le robot. Il analyse les informations, applique la logique métier et, si nécessaire, enregistre les données importantes dans la base de données pour assurer la traçabilité et l’historique.
+
+En cas de détection d’une alerte, le serveur transmet l’information en temps réel vers le front-end en utilisant STOMP sur WebSocket, avec SockJS comme mécanisme de transport. Les messages sont envoyés sur un topic dédié, par exemple /topic/alertes.
+
+Enfin, l’application mobile, développée avec Ionic, s’abonne à ces topics et reçoit instantanément les alertes, ce qui permet à l’utilisateur de surveiller le système en temps réel.
+
+Cette architecture assure une séparation claire des rôles, une communication sécurisée, et une bonne évolutivité du système.
