@@ -1,4 +1,0 @@
-design pattern singleton : ki yabda fi app zoz interfacet fihom mqtt bch ma yodhhrouch 2utilisateur 
-websocket pour notification
-python robot vertu
-mongodb+srv://robot:robot@cluster0.1kkpgd7.mongodb.net/robot?retryWrites=true&w=majority
