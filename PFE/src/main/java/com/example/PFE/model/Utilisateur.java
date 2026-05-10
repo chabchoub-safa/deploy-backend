@@ -21,7 +21,15 @@ public class Utilisateur {
    // private Boolean isNotRobot;// "Je ne suis pas un robot"
     private String role;
 
+    private boolean deleted = false;
 
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
 
     private LocalDate dateNaissance;
     private String resetCode;

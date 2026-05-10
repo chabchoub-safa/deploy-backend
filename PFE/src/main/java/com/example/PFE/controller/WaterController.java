@@ -49,4 +49,14 @@ public class WaterController {
     ) {
         return waterService.getStatsBetween(start, end);
     }
+//    @GetMapping("/monthly")
+//    public WaterStatsDto getMonthlyWater(
+//            @RequestParam int year,
+//            @RequestParam int month
+//    ) {
+//        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0);
+//        LocalDateTime end = start.plusMonths(1);
+//
+//        return waterService.getStatsBetween(start, end);
+//    }
 }

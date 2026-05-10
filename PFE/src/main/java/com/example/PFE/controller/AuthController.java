@@ -207,13 +207,93 @@ public class AuthController {
 
         return ResponseEntity.ok("Mot de passe mis à jour");
     }
-
-
-        @GetMapping
-        public List<Utilisateur> list(@RequestParam(required = false) String role) {
-            if (role == null || role.isBlank()) {
-                return repo.findAll();
-            }
-            return repo.findByRole(role);
+    @GetMapping
+    public List<Utilisateur> list(@RequestParam(required = false) String role) {
+        if (role == null || role.isBlank()) {
+            return repo.findActiveUsers();
         }
+
+        return repo.findActiveUsersByRole(role);
+    }
+//    @GetMapping
+//    public List<Utilisateur> list(@RequestParam(required = false) String role) {
+//        if (role == null || role.isBlank()) {
+//            return repo.findByDeletedFalse();
+//        }
+//
+//        return repo.findByRoleAndDeletedFalse(role);
+//    }
+//        @GetMapping
+//        public List<Utilisateur> list(@RequestParam(required = false) String role) {
+//            if (role == null || role.isBlank()) {
+//                return repo.findAll();
+//            }
+//            return repo.findByRole(role);
+//        }
+//@GetMapping
+//public List<Utilisateur> list(
+//        @RequestParam(required = false) String role,
+//        @RequestParam(defaultValue = "false") boolean includeDeleted
+//) {
+//    if (includeDeleted) {
+//        if (role == null || role.isBlank()) {
+//            return repo.findAll();
+//        }
+//        return repo.findByRole(role);
+//    }
+//
+//    if (role == null || role.isBlank()) {
+//        return repo.findByDeletedFalse();
+//    }
+//
+//    return repo.findByRoleAndDeletedFalse(role);
+//}
+
+//    @PutMapping("/users/{id}/soft-delete")
+//    public ResponseEntity<?> softDeleteUser(@PathVariable String id) {
+//        Utilisateur user = repo.findById(id)
+//                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+//
+//        user.setDeleted(true);
+//        repo.save(user);
+//
+//        return ResponseEntity.ok("Utilisateur supprimé temporairement");
+//    }
+//
+//    @PutMapping("/users/{id}/restore")
+//    public ResponseEntity<?> restoreUser(@PathVariable String id) {
+//        Utilisateur user = repo.findById(id)
+//                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+//
+//        user.setDeleted(false);
+//        repo.save(user);
+//
+//        return ResponseEntity.ok("Utilisateur restauré");
+//    }
+@PutMapping("/users/{id}/soft-delete")
+public ResponseEntity<?> softDeleteUser(@PathVariable String id) {
+    Utilisateur user = repo.findById(id)
+            .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+    user.setDeleted(true);
+    repo.save(user);
+
+    return ResponseEntity.ok("Utilisateur supprimé temporairement");
+}
+
+    @PutMapping("/users/{id}/restore")
+    public ResponseEntity<?> restoreUser(@PathVariable String id) {
+        Utilisateur user = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        user.setDeleted(false);
+        repo.save(user);
+
+        return ResponseEntity.ok("Utilisateur restauré");
+    }
+
+    @GetMapping("/users/deleted")
+    public List<Utilisateur> listDeletedUsers(@RequestParam String role) {
+        return repo.findDeletedUsersByRole(role);
+    }
     }
