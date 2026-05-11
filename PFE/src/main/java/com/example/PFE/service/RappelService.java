@@ -75,7 +75,7 @@ public class RappelService {
     }
 
     // ✅ Scheduler: tourne chaque heure (tu peux mettre chaque 10 min si tu veux)
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0 9 * * *")
 
     public void processRappels() {
         LocalDate today = LocalDate.now();
