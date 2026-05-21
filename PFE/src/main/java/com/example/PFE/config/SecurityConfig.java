@@ -220,34 +220,57 @@ public class SecurityConfig {
     }
 
     // ✅ Ajout de configuration CORS personnalisée
+//    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration configuration = new CorsConfiguration();
+//        configuration.setAllowedOrigins(List.of(
+//                "http://localhost:8100",
+//                "http://localhost:5173",// ✅ Frontend sur navigateur
+//                "http://localhost:5173/",
+//                "http://192.168.100.71:8100",
+//                "http://192.168.43.69:8100",
+//                "http://192.168.0.71:8100",
+//                "http://20.20.24.201:8100", // ✅ fac
+//                "http://172.16.0.29:8100", // ✅ dar
+//                "capacitor://localhost",       // ✅ App mobile Ionic/Capacitor
+//                "http://localhost"  ,
+//                "capacitor-electron://-",
+//                "http://172.16.0.38:8100" ,
+//                "http://localhost",
+//                "https://localhost",        // ✅ à ajouter
+//                "ionic://localhost",        // ✅ à ajouter (anciens projets Ionic)
+//                "null"    // ✅ fallback localhost
+//        ));
+//        configuration.addAllowedMethod("*");
+//        //configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//        //configuration.setAllowedHeaders(List.of("*"));
+//        //configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+//        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
+//
+//        configuration.setAllowCredentials(true);
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", configuration);
+//        return source;
+//    }
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:8100",
-                "http://localhost:5173",// ✅ Frontend sur navigateur
-                "http://localhost:5173/",
-                "http://192.168.100.71:8100",
-                "http://192.168.43.69:8100",
-                "http://192.168.0.71:8100",
-                "http://20.20.24.201:8100", // ✅ fac
-                "http://172.16.0.29:8100", // ✅ dar
-                "capacitor://localhost",       // ✅ App mobile Ionic/Capacitor
-                "http://localhost"  ,
-                "capacitor-electron://-",
-                "http://172.16.0.38:8100" ,
-                "http://localhost",
-                "https://localhost",        // ✅ à ajouter
-                "ionic://localhost",        // ✅ à ajouter (anciens projets Ionic)
-                "null"    // ✅ fallback localhost
-        ));
-        configuration.addAllowedMethod("*");
-        //configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        //configuration.setAllowedHeaders(List.of("*"));
-        //configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
 
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://192.168.*.*:*",
+                "http://172.16.*.*:*",
+                "http://10.*.*.*:*",
+                "capacitor://localhost",
+                "ionic://localhost",
+                "capacitor-electron://*",
+                "file://*"
+        ));
+
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
         configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
