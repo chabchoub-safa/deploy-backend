@@ -182,7 +182,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/tissus/**").permitAll()
                         .requestMatchers("/api/machines/**").permitAll()
                         .requestMatchers("/api/prediction/**").permitAll()
-
+                        .requestMatchers("/api/entreprises/**").permitAll()
+                        .requestMatchers("/api/complements/**").permitAll()
                         .requestMatchers("/api/auth/forgot-password").permitAll()
                         .requestMatchers("/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/messages/client/**").authenticated()
@@ -229,7 +230,7 @@ public class SecurityConfig {
                 "http://192.168.100.71:8100",
                 "http://192.168.43.69:8100",
                 "http://192.168.0.71:8100",
-                "http://20.20.23.254:8100", // ✅ fac
+                "http://20.20.24.201:8100", // ✅ fac
                 "http://172.16.0.29:8100", // ✅ dar
                 "capacitor://localhost",       // ✅ App mobile Ionic/Capacitor
                 "http://localhost"  ,

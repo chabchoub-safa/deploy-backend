@@ -55,7 +55,6 @@ public class HjSummaryService {
 
         return new ArrayList<>(map.values());
     }
-
     private void addRow(
             Map<String, HjSummaryRow> map,
             String cat,
@@ -79,41 +78,81 @@ public class HjSummaryService {
         for (Complement c : complements) {
             if (c == null) continue;
 
-            String nom = normalizeName(c.getNom());
+            String nomOriginal = c.getNom() == null ? "" : c.getNom().trim();
             double valeur = parseDouble(c.getValeur());
 
-            if (valeur == 0) continue;
+            if (nomOriginal.isEmpty() || valeur == 0) continue;
 
-            switch (nom) {
-                case "abdlhmid":
-                case "abdelhamid":
-                case "abdelhmid":
-
-                    row.setAbdlhmid(row.getAbdlhmid() + valeur);
-                    break;
-
-                case "insaf":
-                    row.setInsaf(row.getInsaf() + valeur);
-                    break;
-
-                case "rachida":
-                    row.setRachida(row.getRachida() + valeur);
-                    break;
-
-                case "majdi":
-                    row.setMajdi(row.getMajdi() + valeur);
-                    break;
-
-                case "chourouk":
-                    row.setChourouk(row.getChourouk() + valeur);
-                    break;
-
-                default:
-                    System.out.println("Nom complément non reconnu : " + c.getNom());
-                    break;
-            }
+            row.addValeur(nomOriginal, valeur);
         }
     }
+//    private void addRow(
+//            Map<String, HjSummaryRow> map,
+//            String cat,
+//            String nature,
+//            List<Complement> complements
+//    ) {
+//        String safeCat = normalizeCat(cat);
+//        String safeNature = normalizeNature(nature);
+//
+//        String key = safeCat + "||" + safeNature;
+//
+//        HjSummaryRow row = map.computeIfAbsent(
+//                key,
+//                k -> new HjSummaryRow(safeCat, safeNature)
+//        );
+//
+//        if (complements == null || complements.isEmpty()) {
+//            return;
+//        }
+//
+//        for (Complement c : complements) {
+//            if (c == null) continue;
+//
+//            String nom = normalizeName(c.getNom());
+//            double valeur = parseDouble(c.getValeur());
+//
+//            if (valeur == 0) continue;
+//            for (Complement c : complements) {
+//                if (c == null) continue;
+//
+//                String nomOriginal = c.getNom() == null ? "" : c.getNom().trim();
+//                double valeur = parseDouble(c.getValeur());
+//
+//                if (nomOriginal.isEmpty() || valeur == 0) continue;
+//
+//                row.addValeur(nomOriginal, valeur);
+//            }
+////            switch (nom) {
+////                case "abdlhmid":
+////                case "abdelhamid":
+////                case "abdelhmid":
+////
+////                    row.setAbdlhmid(row.getAbdlhmid() + valeur);
+////                    break;
+////
+////                case "insaf":
+////                    row.setInsaf(row.getInsaf() + valeur);
+////                    break;
+////
+////                case "rachida":
+////                    row.setRachida(row.getRachida() + valeur);
+////                    break;
+////
+////                case "majdi":
+////                    row.setMajdi(row.getMajdi() + valeur);
+////                    break;
+////
+////                case "chourouk":
+////                    row.setChourouk(row.getChourouk() + valeur);
+////                    break;
+////
+////                default:
+////                    System.out.println("Nom complément non reconnu : " + c.getNom());
+////                    break;
+////            }
+//        }
+//    }
 
     private String normalizeCat(String value) {
         if (value == null || value.trim().isEmpty()) {
@@ -129,16 +168,16 @@ public class HjSummaryService {
         return value.trim().toUpperCase();
     }
 
-    private String normalizeName(String value) {
-        if (value == null) return "";
-
-        return value
-                .trim()
-                .toLowerCase()
-                .replace(" ", "")
-                .replace("_", "")
-                .replace("-", "");
-    }
+//    private String normalizeName(String value) {
+//        if (value == null) return "";
+//
+//        return value
+//                .trim()
+//                .toLowerCase()
+//                .replace(" ", "")
+//                .replace("_", "")
+//                .replace("-", "");
+//    }
 
     private double parseDouble(String value) {
         if (value == null) return 0.0;

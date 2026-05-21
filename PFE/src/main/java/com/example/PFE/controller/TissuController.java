@@ -70,7 +70,7 @@ public class TissuController {
 
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Tissu createMultipart(@RequestPart("data") Tissu tissu,
+    public Tissu createMultipart(Principal principal,@RequestPart("data") Tissu tissu,
                                  @RequestPart(value="file", required=false) MultipartFile file) throws Exception {
 
         tissu.setCreatedAt(new Date());
@@ -104,7 +104,24 @@ public class TissuController {
             String path = fs.save(file, "demande");
             tissu.setDemandeFilePath(path);
         }
+// ✅ technicien connecté
+        if (principal != null) {
 
+            String emailTech = principal.getName();
+
+            utilisateurRepo.findByEmail(emailTech).ifPresent(user -> {
+
+                // seulement si technicien
+                if ("ROLE_TECHNICIEN".equals(user.getRole())) {
+
+                    tissu.setLastTechnicienId(user.getId());
+
+                    tissu.setLastTechnicienNom(
+                            user.getNom() + " " + user.getPrenom()
+                    );
+                }
+            });
+        }
         return tissuRepo.save(tissu);
     }
     // ✅ download fichier demande uploadé
@@ -347,9 +364,11 @@ public class TissuController {
     }
 
     // GET /api/tissus/by-technicien/{techId}
-    @GetMapping("/by-technicien/{techId}")
-    public List<Tissu> byTechnicien(@PathVariable String techId) {
-        return tissuRepo.findByLastTechnicienId(techId);
+    @GetMapping("/for-technicien")
+    public List<Tissu> forTechnicien() {
+        return tissuRepo.findByStatutIn(
+                List.of(StatutTissu.EN_STOCK, StatutTissu.EN_TRAITEMENT)
+        );
     }
     @PatchMapping("/{id}/assign-technicien")
     public ResponseEntity<Tissu> assignTechnicien(

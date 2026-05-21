@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 
 public interface DiagnosticRepository extends MongoRepository<Diagnostic, String> {
-
+    long countByEntrepriseIgnoreCase(String entreprise);
     List<Diagnostic> findByEntrepriseContainingIgnoreCaseOrObjetContainingIgnoreCaseOrCatContainingIgnoreCaseOrDevisContainingIgnoreCaseOrObservationsContainingIgnoreCase(
             String entreprise,
             String objet,

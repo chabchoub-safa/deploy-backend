@@ -2,7 +2,7 @@ package com.example.PFE.repository;
 
 import com.example.PFE.model.Tissu;
 import org.springframework.data.mongodb.repository.MongoRepository;
-
+import com.example.PFE.model.StatutTissu;
 import java.util.List;
 
 public interface TissuRepo extends MongoRepository<Tissu,String> {
@@ -10,4 +10,5 @@ public interface TissuRepo extends MongoRepository<Tissu,String> {
     List<Tissu> findByClientId(String clientId);
     List<Tissu> findByLastTechnicienId(String lastTechnicienId);
     List<Tissu> findByClientEmail(String clientEmail);
+    List<Tissu> findByStatutIn(List<StatutTissu> statuts);
 }

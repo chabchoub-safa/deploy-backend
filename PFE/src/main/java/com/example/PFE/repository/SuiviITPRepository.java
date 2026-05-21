@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 
 public interface SuiviITPRepository extends MongoRepository<SuiviITP, String> {
-
+    long countByEntrepriseIgnoreCase(String entreprise);
     List<SuiviITP> findByEntrepriseContainingIgnoreCase(String entreprise);
 
     List<SuiviITP> findByObjetContainingIgnoreCase(String objet);

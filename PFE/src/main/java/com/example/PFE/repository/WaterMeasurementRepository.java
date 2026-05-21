@@ -24,4 +24,6 @@ public interface WaterMeasurementRepository extends MongoRepository<WaterMeasure
 
     List<WaterMeasurement> findByDeviceIdOrderByReceivedAtAsc(String deviceId);
 
+
+
 }
